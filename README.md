@@ -69,7 +69,6 @@ A complete Django-based subscription platform for news and content delivery with
 
 - Clone repository
 - git clone <repo url> 
-- cd <repo>
 - create virtual environment
 - install dependencies (requirements.txt)
 - create database
