@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Pricing - Choose Your Plan{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-16">
+    <div class="text-center mb-12 animate-slide-up">
+        <h1 class="text-5xl font-bold mb-4" style="color: var(--primary);">Simple, Transparent Pricing</h1>
+        <p class="text-xl text-gray-600">Choose the plan that works for you</p>
+    </div>
+    
+    <div class="grid md:grid-cols-3 gap-8" id="plans-container">
+        <div class="col-span-full text-center py-8">Loading plans...</div>
+    </div>
+</div>
+
+<script>
+async function loadPlans() {
+    try {
+        const resp = await fetch('/api/payments/plans/');
+        const plans = await resp.json();
+        const container = document.getElementById('plans-container');
+        
+        container.innerHTML = plans.map((plan, index) => {
+            const isPopular = plan.tier === 'premium';
+            const isFree = plan.tier === 'free';
+            return `
+                <div class="plan-card bg-white rounded-xl shadow-md p-8 ${isPopular ? 'popular border-2' : 'border'}">
+                    <h2 class="text-2xl font-bold mb-2">${plan.name}</h2>
+                    <div class="text-4xl font-bold mb-4">$${plan.price}<span class="text-lg text-gray-500">/${plan.interval}</span></div>
+                    <p class="text-gray-600 mb-6">${plan.description || (isFree ? 'Basic access to free articles' : 'Full access to premium content')}</p>
+                    <ul class="space-y-3 mb-8">
+                        ${plan.features && plan.features.length ? plan.features.map(f => `<li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> ${f}</li>`).join('') : ''}
+                        ${isFree ? `<li class="flex items-center gap-2"><i class="fas fa-newspaper text-blue-500"></i> ${plan.free_articles_per_month || 5} free premium articles/month</li>` : ''}
+                        ${!isFree ? `<li class="flex items-center gap-2"><i class="fas fa-infinity text-blue-500"></i> Unlimited access</li>` : ''}
+                    </ul>
+                    <button onclick="handleSubscribe('${plan.lemon_squeezy_variant_id}')" 
+                            class="subscribe-btn w-full py-3 rounded-lg font-semibold transition-all ${isFree ? 'bg-gray-200 hover:bg-gray-300 text-gray-800' : 'btn-gradient text-white'}"
+                            data-plan-id="${plan.id}">
+                        ${isFree ? 'Get Started' : 'Subscribe Now'}
+                    </button>
+                </div>
+            `;
+        }).join('');
+        
+        // Re-trigger subscription UI update after plans load
+        if (typeof fetchUserSubscription === 'function') {
+            fetchUserSubscription();
+        }
+    } catch(e) { 
+        console.error(e);
+        document.getElementById('plans-container').innerHTML = '<div class="col-span-full text-center py-8 text-red-600">Error loading plans. Please refresh.</div>';
+    }
+}
+
+async function handleSubscribe(variantId) {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        window.location.href = '/login/';
+        return;
+    }
+    
+    showLoading();
+    try {
+        const resp = await fetch('/api/payments/create-checkout/', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json', 
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ variant_id: variantId })
+        });
+        const data = await resp.json();
+        hideLoading();
+        
+        if (resp.ok && data.checkout_url) {
+            window.location.href = data.checkout_url;
+        } else {
+            showToast(data.error || 'Error creating checkout', 'error');
+        }
+    } catch(e) { 
+        hideLoading();
+        showToast('Network error. Please try again.', 'error');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadPlans);
+</script>
+{% endblock %}

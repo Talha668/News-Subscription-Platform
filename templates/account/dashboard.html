@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Your Dashboard</h1>
+    
+    <div class="grid md:grid-cols-3 gap-6">
+        <!-- Subscription Card -->
+        <div class="bg-white rounded-xl shadow p-6">
+            <h2 class="text-xl font-bold mb-4">Current Plan</h2>
+            <div x-show="subscription?.has_active_subscription">
+                <p class="text-3xl font-bold text-blue-600" x-text="subscription?.subscription?.plan_details?.name"></p>
+                <p class="text-gray-600 mt-2" x-text="`$${subscription?.subscription?.plan_details?.price}/${subscription?.subscription?.plan_details?.interval}`"></p>
+                <p class="text-sm text-gray-500 mt-4">Renews on <span x-text="new Date(subscription?.subscription?.current_period_end).toLocaleDateString()"></span></p>
+                <a href="/subscription/" class="block text-center mt-4 text-blue-600">Manage Subscription →</a>
+            </div>
+            <div x-show="!subscription?.has_active_subscription">
+                <p class="text-gray-600">No active subscription</p>
+                <a href="/pricing/" class="block text-center mt-4 bg-blue-600 text-white py-2 rounded-lg">Subscribe Now</a>
+            </div>
+        </div>
+        
+        <!-- Stats Card -->
+        <div class="bg-white rounded-xl shadow p-6">
+            <h2 class="text-xl font-bold mb-4">Reading Stats</h2>
+            <div class="text-3xl font-bold text-green-600" id="articles-read">0</div>
+            <p class="text-gray-600">Articles read this month</p>
+        </div>
+        
+        <!-- Reading List Card -->
+        <div class="bg-white rounded-xl shadow p-6">
+            <h2 class="text-xl font-bold mb-4">Saved Articles</h2>
+            <div id="reading-list-count" class="text-3xl font-bold text-purple-600">0</div>
+            <a href="/reading-list/" class="block text-center mt-4 text-purple-600">View Reading List →</a>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadDashboardStats() {
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+    
+    try {
+        const resp = await fetch('/api/payments/current-subscription/', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const sub = await resp.json();
+        
+        if (sub?.subscription?.plan_details?.tier === 'free') {
+            const remaining = sub.subscription.articles_remaining;
+            document.getElementById('articles-read').innerHTML = remaining !== undefined ? `${5 - remaining} of 5` : '0 of 5';
+        } else {
+            document.getElementById('articles-read').innerHTML = 'Unlimited';
+        }
+    } catch(e) { console.error(e); }
+    
+    try {
+        const resp = await fetch('/api/articles/articles/reading_list/', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await resp.json();
+        document.getElementById('reading-list-count').innerHTML = data.length || 0;
+    } catch(e) { console.error(e); }
+}
+
+document.addEventListener('DOMContentLoaded', loadDashboardStats);
+</script>
+{% endblock %}

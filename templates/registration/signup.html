@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign Up{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto px-4 py-16">
+    <div class="bg-white rounded-xl shadow p-8">
+        <h1 class="text-2xl font-bold text-center mb-6">Create Free Account</h1>
+        
+        <form id="signup-form">
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Email</label>
+                <input type="email" id="email" class="w-full border rounded-lg px-4 py-2" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Username</label>
+                <input type="text" id="username" class="w-full border rounded-lg px-4 py-2" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Password</label>
+                <input type="password" id="password1" class="w-full border rounded-lg px-4 py-2" required>
+            </div>
+            <div class="mb-6">
+                <label class="block text-gray-700 mb-2">Confirm Password</label>
+                <input type="password" id="password2" class="w-full border rounded-lg px-4 py-2" required>
+            </div>
+            <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">Sign Up</button>
+        </form>
+        
+        <p class="text-center text-gray-600 mt-4">
+            Already have an account? <a href="/login/" class="text-blue-600">Login</a>
+        </p>
+    </div>
+</div>
+
+<script>
+document.getElementById('signup-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const password1 = document.getElementById('password1').value;
+    const password2 = document.getElementById('password2').value;
+    
+    if (password1 !== password2) {
+        alert('Passwords do not match');
+        return;
+    }
+    
+    try {
+        const resp = await fetch('/api/auth/register/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: document.getElementById('email').value,
+                username: document.getElementById('username').value,
+                password: password1
+            })
+        });
+        const data = await resp.json();
+        
+        if (resp.ok) {
+            window.location.href = '/login/';
+        } else {
+            const errors = Object.values(data).flat().join(', ');
+            alert(errors || 'Registration failed');
+        }
+    } catch(e) { alert('Error signing up'); }
+});
+</script>
+{% endblock %}

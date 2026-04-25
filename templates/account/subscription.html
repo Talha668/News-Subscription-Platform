@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Subscription{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8 animate-slide-up">Subscription Management</h1>
+    
+    <div x-show="subscription?.has_active_subscription" x-cloak>
+        <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">Current Plan Details</h2>
+            <div class="space-y-3">
+                <div class="flex justify-between py-2 border-b">
+                    <span class="text-gray-600">Plan:</span>
+                    <span class="font-semibold" x-text="subscription?.subscription?.plan_details?.name"></span>
+                </div>
+                <div class="flex justify-between py-2 border-b">
+                    <span class="text-gray-600">Price:</span>
+                    <span class="font-semibold" x-text="`$${subscription?.subscription?.plan_details?.price}/${subscription?.subscription?.plan_details?.interval}`"></span>
+                </div>
+                <div class="flex justify-between py-2 border-b">
+                    <span class="text-gray-600">Current Period:</span>
+                    <span x-text="new Date(subscription?.subscription?.current_period_start).toLocaleDateString() + ' - ' + new Date(subscription?.subscription?.current_period_end).toLocaleDateString()"></span>
+                </div>
+                <div class="flex justify-between py-2 border-b">
+                    <span class="text-gray-600">Cancels at period end:</span>
+                    <span x-text="subscription?.subscription?.cancel_at_period_end ? 'Yes' : 'No'"></span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Upgrade/Downgrade Options -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">Change Plan</h2>
+            <div id="other-plans" class="space-y-3"></div>
+        </div>
+        
+        <!-- Cancel Subscription -->
+        <div class="bg-red-50 rounded-xl p-6 border border-red-200">
+            <h2 class="text-xl font-bold text-red-800 mb-2">Cancel Subscription</h2>
+            <p class="text-red-600 mb-4">You will lose access to premium content after your current period ends.</p>
+            <button onclick="cancelSubscription()" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition">Cancel Subscription</button>
+        </div>
+    </div>
+    
+    <div x-show="!subscription?.has_active_subscription" x-cloak>
+        <div class="bg-white rounded-xl shadow-md p-6 text-center">
+            <p class="text-gray-600 mb-4">You don't have an active subscription.</p>
+            <a href="/pricing/" class="btn-gradient text-white px-6 py-2 rounded-lg inline-block">View Plans</a>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadOtherPlans() {
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+    
+    // Wait for Alpine data to be available
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const currentTier = window.app?.subscription?.subscription?.plan_details?.tier;
+    if (!currentTier) return;
+    
+    try {
+        const resp = await fetch('/api/payments/plans/');
+        const plans = await resp.json();
+        const otherPlans = plans.filter(p => p.tier !== currentTier && p.tier !== 'free');
+        const container = document.getElementById('other-plans');
+        
+        if (otherPlans.length === 0) {
+            container.innerHTML = '<p class="text-gray-500">No other plans available.</p>';
+            return;
+        }
+        
+        container.innerHTML = otherPlans.map(plan => `
+            <div class="flex justify-between items-center p-4 border rounded-lg hover:shadow-md transition">
+                <div>
+                    <div class="font-semibold">${plan.name}</div>
+                    <div class="text-sm text-gray-500">$${plan.price}/${plan.interval}</div>
+                </div>
+                <button onclick="changePlan('${plan.lemon_squeezy_variant_id}')" class="btn-gradient text-white px-4 py-2 rounded-lg">Switch to ${plan.name}</button>
+            </div>
+        `).join('');
+    } catch(e) { console.error(e); }
+}
+
+async function changePlan(variantId) {
+    const token = localStorage.getItem('access_token');
+    showLoading();
+    try {
+        const resp = await fetch('/api/payments/update-subscription/', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json', 
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ variant_id: variantId })
+        });
+        const data = await resp.json();
+        hideLoading();
+        
+        if (resp.ok) {
+            showToast(data.message);
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showToast(data.error, 'error');
+        }
+    } catch(e) { 
+        hideLoading();
+        showToast('Network error', 'error');
+    }
+}
+
+async function cancelSubscription() {
+    if (!confirm('Are you sure you want to cancel your subscription? You will lose access at the end of your billing period.')) return;
+    
+    const token = localStorage.getItem('access_token');
+    showLoading();
+    try {
+        const resp = await fetch('/api/payments/cancel-subscription/', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await resp.json();
+        hideLoading();
+        
+        if (resp.ok) {
+            showToast(data.message);
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showToast(data.error, 'error');
+        }
+    } catch(e) { 
+        hideLoading();
+        showToast('Network error', 'error');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(loadOtherPlans, 800);
+});
+</script>
+{% endblock %}

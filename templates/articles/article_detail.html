@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ article.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <article id="article-content" data-slug="{{ article.slug }}">
+        <div class="text-center py-16">Loading article...</div>
+    </article>
+</div>
+
+<script>
+const articleSlug = window.location.pathname.split('/').filter(p => p)[1];
+
+async function loadArticle() {
+    const token = localStorage.getItem('access_token');
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+    
+    try {
+        const resp = await fetch(`/api/articles/articles/${articleSlug}/`, { headers });
+        const article = await resp.json();
+        
+        if (resp.status === 403 && article.requires_upgrade) {
+            document.getElementById('article-content').innerHTML = `
+                <div class="text-center py-16 bg-gray-100 rounded-xl">
+                    <div class="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-lock text-yellow-600 text-3xl"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold mb-2">${article.title}</h1>
+                    <p class="text-gray-600 mb-4">${article.excerpt}</p>
+                    <p class="text-lg mb-6">This is ${article.required_tier} content. Upgrade to read the full article.</p>
+                    <a href="/pricing/" class="btn-gradient text-white px-6 py-3 rounded-lg inline-block">Upgrade to ${article.required_tier.charAt(0).toUpperCase() + article.required_tier.slice(1)}</a>
+                </div>
+            `;
+            return;
+        }
+        
+        // Build meta info HTML
+        let metaInfoHtml = '';
+        
+        // Add source name if exists
+        if (article.source_name) {
+            metaInfoHtml += `
+                <div class="text-sm text-gray-500 mb-2">
+                    <i class="fas fa-rss"></i> Source: ${article.source_name}
+                </div>
+            `;
+        }
+        
+        document.getElementById('article-content').innerHTML = `
+            <div class="animate-slide-up">
+                ${article.featured_image ? `<img src="${article.featured_image}" class="w-full rounded-xl mb-6">` : ''}
+                
+                <!-- Article Meta Info -->
+                <div class="mb-6">
+                    ${metaInfoHtml}
+                    <div class="flex items-center gap-2 flex-wrap">
+                        ${article.required_tier !== 'free' ? '<span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm">Premium</span>' : ''}
+                        <span class="text-gray-500 text-sm"><i class="far fa-clock mr-1"></i> ${article.read_time_minutes} min read</span>
+                        <span class="text-gray-500 text-sm"><i class="far fa-calendar-alt mr-1"></i> ${new Date(article.published_at).toLocaleDateString()}</span>
+                    </div>
+                </div>
+                
+                <h1 class="text-4xl font-bold mb-4">${escapeHtml(article.title)}</h1>
+                
+                <div class="flex justify-between items-center pb-6 border-b">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <div class="font-semibold">${article.author?.name || 'Author'}</div>
+                            <div class="text-sm text-gray-500">Writer</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="saveArticle('${article.slug}')" class="text-gray-600 hover:text-indigo-600 transition">
+                            <i class="far fa-bookmark"></i> Save
+                        </button>
+                        <button onclick="shareArticle()" class="text-gray-600 hover:text-indigo-600 transition">
+                            <i class="fas fa-share-alt"></i> Share
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="prose prose-lg max-w-none mt-8">
+                    ${article.body}
+                </div>
+                
+                ${article.source_url ? `
+                <div class="mt-8 pt-6 border-t text-center">
+                    <a href="${article.source_url}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-800 transition">
+                        <i class="fas fa-external-link-alt mr-1"></i> Read original article
+                    </a>
+                </div>
+                ` : ''}
+            </div>
+        `;
+        
+        if (article.remaining_free_articles_this_month !== undefined) {
+            showToast(`You have ${article.remaining_free_articles_this_month} free premium articles remaining this month.`, 'info');
+        }
+        
+    } catch(e) { 
+        console.error(e);
+        document.getElementById('article-content').innerHTML = '<div class="text-center py-16 text-red-600">Error loading article. Please refresh.</div>';
+    }
+}
+
+// Helper function to escape HTML to prevent XSS
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+async function saveArticle(slug) {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        window.location.href = '/login/';
+        return;
+    }
+    
+    showLoading();
+    try {
+        const resp = await fetch(`/api/articles/articles/${slug}/save/`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        hideLoading();
+        if (resp.ok) {
+            showToast('Article saved to reading list!');
+        } else {
+            showToast('Error saving article', 'error');
+        }
+    } catch(e) { 
+        hideLoading();
+        showToast('Network error', 'error');
+    }
+}
+
+function shareArticle() {
+    if (navigator.share) {
+        navigator.share({ title: document.title, url: window.location.href });
+    } else {
+        navigator.clipboard.writeText(window.location.href);
+        showToast('Link copied to clipboard!');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadArticle);
+</script>
+{% endblock %}

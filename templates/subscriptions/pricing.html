@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pricing Plans - SubSaaS{% endblock %}
+
+{% block content %}
+<div class="hero-section text-center py-5">
+    <div class="container">
+        <h1 class="display-4 fw-bold mb-3 fade-in">Simple, Transparent Pricing</h1>
+        <p class="lead text-muted mb-5">Choose the perfect plan for your needs. No hidden fees.</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row g-4">
+        {% for plan in plans %}
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100 shadow-sm border-0 fade-in" style="transition: transform 0.3s;" 
+                 onmouseover="this.style.transform='translateY(-10px)'" 
+                 onmouseout="this.style.transform='translateY(0)'">
+                <div class="card-body p-4">
+                    {% if plan.interval == 'year' %}
+                    <span class="badge bg-warning text-dark mb-3">Save 20%</span>
+                    {% endif %}
+                    <h3 class="card-title">{{ plan.name }}</h3>
+                    <p class="text-muted">{{ plan.description|default:"Perfect for getting started" }}</p>
+                    <div class="my-4">
+                        <span class="display-4 fw-bold">${{ plan.price }}</span>
+                        <span class="text-muted">/{{ plan.interval }}</span>
+                    </div>
+                    <ul class="list-unstyled">
+                        {% for feature in plan.features %}
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>{{ feature }}
+                        </li>
+                        {% empty %}
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Unlimited access</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Priority support</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Cancel anytime</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Secure payments</li>
+                        {% endfor %}
+                    </ul>
+                    
+                    {% if user.is_authenticated %}
+                        {% if user_subscription and user_subscription.plan.id == plan.id and user_subscription.is_active %}
+                            <button class="btn btn-success w-100" disabled>
+                                <i class="fas fa-check me-2"></i>Current Plan
+                            </button>
+                        {% else %}
+                            <a href="{% url 'create_checkout' plan.id %}" class="btn btn-primary w-100" onclick="showLoading()">
+                                <i class="fas fa-shopping-cart me-2"></i>Subscribe Now
+                            </a>
+                        {% endif %}
+                    {% else %}
+                        <a href="/admin/login/" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-sign-in-alt me-2"></i>Login to Subscribe
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <i class="fas fa-box-open fa-4x text-muted mb-3"></i>
+            <h3>No plans available</h3>
+            <p class="text-muted">Please check back later for our pricing plans.</p>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- FAQ Section -->
+    <div class="row mt-5 pt-5">
+        <div class="col-12 text-center mb-4">
+            <h2>Frequently Asked Questions</h2>
+            <p class="text-muted">Have questions? We've got answers.</p>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-4">
+                <h5><i class="fas fa-question-circle text-primary me-2"></i>Can I cancel anytime?</h5>
+                <p class="text-muted">Yes! You can cancel your subscription at any time. You'll continue to have access until the end of your billing period.</p>
+            </div>
+            <div class="mb-4">
+                <h5><i class="fas fa-credit-card text-primary me-2"></i>What payment methods do you accept?</h5>
+                <p class="text-muted">We accept all major credit cards and PayPal through our secure payment processor.</p>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-4">
+                <h5><i class="fas fa-shield-alt text-primary me-2"></i>Is my data secure?</h5>
+                <p class="text-muted">Absolutely! We use industry-standard encryption to protect your data and privacy.</p>
+            </div>
+            <div class="mb-4">
+                <h5><i class="fas fa-headset text-primary me-2"></i>Do you offer support?</h5>
+                <p class="text-muted">Yes! All plans include email support. Premium plans include priority support.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

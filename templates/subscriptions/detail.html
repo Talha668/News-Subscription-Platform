@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+
+{% block title %}My Subscription - SubSaaS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 shadow-sm fade-in">
+                <div class="card-header bg-white border-0 pt-4">
+                    <h2 class="mb-0">
+                        <i class="fas fa-crown text-warning me-2"></i>My Subscription
+                    </h2>
+                </div>
+                <div class="card-body">
+                    {% if subscription %}
+                        <div class="text-center mb-4">
+                            <div class="display-4 mb-2">
+                                <i class="fas fa-check-circle text-success"></i>
+                            </div>
+                            <h3>You're on the <strong>{{ subscription.plan.name }}</strong> plan</h3>
+                            <span class="status-badge status-{{ subscription.status }}">
+                                {{ subscription.get_status_display }}
+                            </span>
+                        </div>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-dollar-sign fa-2x text-primary mb-2"></i>
+                                        <h5 class="mb-1">${{ subscription.plan.price }}</h5>
+                                        <small class="text-muted">per {{ subscription.plan.interval }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-calendar-alt fa-2x text-primary mb-2"></i>
+                                        <h5 class="mb-1">{{ subscription.current_period_end|date:"M d, Y" }}</h5>
+                                        <small class="text-muted">Next billing date</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Your subscription renews automatically on <strong>{{ subscription.current_period_end|date:"F j, Y" }}</strong>
+                        </div>
+                        
+                        {% if subscription.cancel_at_period_end %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Your subscription has been scheduled for cancellation and will end on <strong>{{ subscription.current_period_end|date:"F j, Y" }}</strong>.
+                                <a href="{% url 'resume_subscription' subscription.id %}" class="alert-link">Resume subscription?</a>
+                            </div>
+                        {% else %}
+                            <button type="button" class="btn btn-outline-danger w-100" data-bs-toggle="modal" data-bs-target="#cancelModal">
+                                <i class="fas fa-ban me-2"></i>Cancel Subscription
+                            </button>
+                        {% endif %}
+                        
+                        <!-- Cancel Modal -->
+                        <div class="modal fade" id="cancelModal" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Cancel Subscription</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p>Are you sure you want to cancel your subscription?</p>
+                                        <p class="text-muted">You will continue to have access until <strong>{{ subscription.current_period_end|date:"F j, Y" }}</strong>.</p>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Keep Subscription</button>
+                                        <a href="{% url 'cancel_subscription' subscription.id %}" class="btn btn-danger" onclick="showLoading()">Yes, Cancel</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-crown fa-4x text-muted mb-3"></i>
+                            <h3>No Active Subscription</h3>
+                            <p class="text-muted mb-4">You don't have an active subscription yet.</p>
+                            <a href="{% url 'pricing' %}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-rocket me-2"></i>View Plans
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Features Section -->
+            {% if subscription and subscription.plan %}
+            <div class="card border-0 shadow-sm mt-4 fade-in">
+                <div class="card-header bg-white border-0 pt-4">
+                    <h4><i class="fas fa-star text-warning me-2"></i>Plan Features</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for feature in subscription.plan.features %}
+                        <div class="col-md-6 mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>{{ feature }}
+                        </div>
+                        {% empty %}
+                        <div class="col-12">
+                            <p class="text-muted">Unlock premium features by upgrading your plan.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .status-badge {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+    .status-active { background: #d4edda; color: #155724; }
+    .status-cancelled { background: #f8d7da; color: #721c24; }
+    .status-past_due { background: #fff3cd; color: #856404; }
+</style>
+{% endblock %}

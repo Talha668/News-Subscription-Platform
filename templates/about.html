@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}About Us{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-16">
+    <div class="text-center mb-12 animate-slide-up">
+        <h1 class="text-5xl font-bold mb-4" style="color: var(--primary);">About NewsPlatform</h1>
+        <p class="text-xl text-gray-600">Delivering quality journalism since 2024</p>
+    </div>
+    
+    <div class="prose prose-lg max-w-none">
+        <div class="bg-white rounded-xl shadow-md p-8 mb-8">
+            <h2 class="text-2xl font-bold mb-4">Our Mission</h2>
+            <p class="text-gray-600 leading-relaxed">
+                At NewsPlatform, we believe that quality journalism should be accessible to everyone while also sustainable. 
+                Our mission is to deliver accurate, unbiased, and in-depth news coverage that helps our readers stay informed 
+                about the most important issues shaping our world.
+            </p>
+        </div>
+        
+        <div class="grid md:grid-cols-2 gap-8 mb-8">
+            <div class="bg-white rounded-xl shadow-md p-8">
+                <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
+                    <i class="fas fa-eye text-indigo-600 text-xl"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Independent</h3>
+                <p class="text-gray-600">We're not beholden to any corporate or political interests. Our only loyalty is to the truth.</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-8">
+                <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
+                    <i class="fas fa-chart-line text-indigo-600 text-xl"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2">In-Depth</h3>
+                <p class="text-gray-600">We go beyond headlines to provide context, analysis, and investigative reporting.</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-8">
+                <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
+                    <i class="fas fa-users text-indigo-600 text-xl"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Reader-First</h3>
+                <p class="text-gray-600">Our readers are our priority. We listen, respond, and evolve based on your needs.</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-8">
+                <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
+                    <i class="fas fa-globe text-indigo-600 text-xl"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Global Perspective</h3>
+                <p class="text-gray-600">We cover stories from around the world, connecting local events to global trends.</p>
+            </div>
+        </div>
+        
+        <div class="bg-gray-50 rounded-xl p-8 text-center">
+            <h2 class="text-2xl font-bold mb-4">Join Our Community</h2>
+            <p class="text-gray-600 mb-6">Subscribe today and become part of a community of informed readers.</p>
+            <a href="/pricing/" class="btn-gradient text-white px-8 py-3 rounded-lg inline-block">View Subscription Plans</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment History{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8 animate-slide-up">Payment History</h1>
+    
+    <div class="bg-white rounded-xl shadow-md overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b">
+                    <tr>
+                        <th class="text-left py-4 px-6 font-semibold text-gray-600">Date</th>
+                        <th class="text-left py-4 px-6 font-semibold text-gray-600">Order ID</th>
+                        <th class="text-left py-4 px-6 font-semibold text-gray-600">Amount</th>
+                        <th class="text-left py-4 px-6 font-semibold text-gray-600">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="transactions-table">
+                    <tr><td colspan="4" class="text-center py-8 text-gray-500">Loading transactions...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="mt-6 text-center">
+        <a href="/subscription/" class="text-indigo-600 hover:underline">← Back to Subscription</a>
+    </div>
+</div>
+
+<script>
+async function loadTransactions() {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        window.location.href = '/login/';
+        return;
+    }
+    
+    try {
+        const resp = await fetch('/api/payments/transactions/', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const transactions = await resp.json();
+        const tbody = document.getElementById('transactions-table');
+        
+        if (transactions && transactions.length > 0) {
+            tbody.innerHTML = transactions.map(tx => `
+                <tr class="border-b hover:bg-gray-50 transition">
+                    <td class="py-4 px-6">${new Date(tx.created_at).toLocaleDateString()}</td>
+                    <td class="py-4 px-6 font-mono text-sm">${tx.lemon_squeezy_order_id}</td>
+                    <td class="py-4 px-6 font-semibold">${formatCurrency(tx.amount, tx.currency)}</td>
+                    <td class="py-4 px-6">
+                        <span class="px-2 py-1 rounded-full text-xs font-semibold ${tx.status === 'paid' ? 'bg-green-100 text-green-800' : tx.status === 'failed' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}">
+                            ${tx.status.toUpperCase()}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-500">No transactions found.</td></tr>';
+        }
+    } catch(e) { 
+        console.error(e);
+        document.getElementById('transactions-table').innerHTML = '<tr><td colspan="4" class="text-center py-8 text-red-600">Error loading transactions.</td></tr>';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadTransactions);
+</script>
+{% endblock %}

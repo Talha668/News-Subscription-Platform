@@ -1,0 +1,25 @@
+{% extends "admin/index.html" %}
+{% load i18n %}
+
+{% block content %}
+<div id="content-main">
+    <div class="module" style="margin-bottom: 20px;">
+        <h2>Quick Actions</h2>
+        <div class="row" style="display: flex; gap: 15px; padding: 15px; flex-wrap: wrap;">
+            <a href="/admin-dashboard/" class="button" style="background: #6366f1; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; display: inline-block;">
+                📊 View Analytics Dashboard
+            </a>
+            <a href="/admin/subscriptions/plan/add/" class="button" style="background: #10b981; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; display: inline-block;">
+                ➕ Add New Plan
+            </a>
+            <a href="/admin/subscriptions/subscription/" class="button" style="background: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; display: inline-block;">
+                👥 Manage Subscriptions
+            </a>
+            <a href="/swagger/" class="button" style="background: #f59e0b; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; display: inline-block;">
+                📚 API Documentation
+            </a>
+        </div>
+    </div>
+    {{ block.super }}
+</div>
+{% endblock %}

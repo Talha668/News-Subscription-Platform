@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Premium News Platform{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4">
+    <!-- Hero Section -->
+    <div class="text-center py-16">
+        <h1 class="text-5xl font-bold text-gray-900 mb-4">Stay Informed. Stay Ahead.</h1>
+        <p class="text-xl text-gray-600 mb-8">Get unlimited access to premium news, analysis, and insights.</p>
+        <a href="/pricing/" class="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg hover:bg-blue-700">Start Reading →</a>
+    </div>
+    
+    <!-- Featured Articles -->
+    <div class="mt-12">
+        <h2 class="text-3xl font-bold mb-6">Featured Articles</h2>
+        <div class="grid md:grid-cols-3 gap-6" id="featured-articles">
+            <div class="text-center py-8 col-span-3">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <p class="text-gray-500 mt-2">Loading featured articles...</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Categories -->
+    <div class="mt-16">
+        <h2 class="text-3xl font-bold mb-6">Popular Topics</h2>
+        <div class="flex flex-wrap gap-3" id="categories">
+            <div class="text-center py-4 w-full">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <p class="text-gray-500 mt-2">Loading categories...</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- CTA Banner -->
+    <div class="mt-20 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-12 text-center text-white">
+        <h2 class="text-3xl font-bold mb-4">Ready for unlimited access?</h2>
+        <p class="text-lg mb-6">Join thousands of readers who trust us for their daily news.</p>
+        <a href="/pricing/" class="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100">Subscribe Now</a>
+    </div>
+</div>
+
+<script>
+async function loadHomepage() {
+    const token = localStorage.getItem('access_token');
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+    
+    // Load featured articles - FIXED ENDPOINT
+    try {
+        // Using the correct API endpoint based on your URL structure
+        const resp = await fetch('/api/articles/api/articles/popular/?limit=3', { headers });
+        
+        if (!resp.ok) {
+            throw new Error(`HTTP error! status: ${resp.status}`);
+        }
+        
+        const articles = await resp.json();
+        const container = document.getElementById('featured-articles');
+        
+        if (articles && articles.length > 0) {
+            container.innerHTML = articles.map(article => `
+                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                    ${article.featured_image ? `<img src="${article.featured_image}" alt="${escapeHtml(article.title)}" class="w-full h-48 object-cover" onerror="this.style.display='none'">` : 
+                        `<div class="w-full h-48 bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                            <i class="fas fa-newspaper text-white text-4xl"></i>
+                        </div>`
+                    }
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-2">
+                            ${article.required_tier !== 'free' ? 
+                                `<span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">${article.required_tier}</span>` : 
+                                `<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Free</span>`
+                            }
+                            <span class="text-sm text-gray-500">
+                                <i class="fas fa-eye mr-1"></i> ${article.view_count || 0} views
+                            </span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2 line-clamp-2">
+                            <a href="/article/${article.slug}/" class="text-gray-800 hover:text-blue-600">
+                                ${escapeHtml(article.title)}
+                            </a>
+                        </h3>
+                        <p class="text-gray-600 mb-4 line-clamp-3">
+                            ${escapeHtml(article.excerpt ? article.excerpt.substring(0, 150) : 'Click to read more...')}
+                        </p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-500">
+                                <i class="fas fa-user mr-1"></i> ${escapeHtml(article.author_name || 'Staff')}
+                            </span>
+                            <a href="/article/${article.slug}/" class="text-blue-600 font-semibold hover:underline">
+                                Read More →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = '<div class="col-span-3 text-center py-8 text-gray-500">No articles available yet. Check back soon!</div>';
+        }
+    } catch(e) { 
+        console.error('Error loading articles:', e);
+        const container = document.getElementById('featured-articles');
+        container.innerHTML = '<div class="col-span-3 text-center py-8 text-red-500">Unable to load articles. Please try again later.</div>';
+    }
+    
+    // Load categories - FIXED ENDPOINT
+    try {
+        const resp = await fetch('/api/articles/api/categories/');
+        
+        if (!resp.ok) {
+            throw new Error(`HTTP error! status: ${resp.status}`);
+        }
+        
+        const categories = await resp.json();
+        const container = document.getElementById('categories');
+        
+        if (categories && categories.length > 0) {
+            container.innerHTML = categories.map(cat => `
+                <a href="/category/${cat.slug}/" class="bg-gray-200 hover:bg-blue-100 text-gray-700 hover:text-blue-700 px-4 py-2 rounded-full text-sm font-semibold transition-colors">
+                    ${escapeHtml(cat.name)}
+                </a>
+            `).join('');
+        } else {
+            container.innerHTML = '<p class="text-gray-500">No categories available.</p>';
+        }
+    } catch(e) { 
+        console.error('Error loading categories:', e);
+        const container = document.getElementById('categories');
+        container.innerHTML = '<p class="text-gray-500">Unable to load categories.</p>';
+    }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Add line-clamp styles
+const style = document.createElement('style');
+style.textContent = `
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .line-clamp-3 {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+`;
+document.head.appendChild(style);
+
+document.addEventListener('DOMContentLoaded', loadHomepage);
+</script>
+{% endblock %}

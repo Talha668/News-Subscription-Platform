@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}NewsPlatform{% endblock %}</title>
+    <meta name="description" content="{% block description %}Premium news and insights{% endblock %}">
+    
+    <!-- Tailwind CSS for utilities -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Your Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    
+    <!-- Alpine.js for reactivity -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Your Custom JS -->
+    <script src="/static/js/main.js" defer></script>
+    
+    <style>
+        [x-cloak] { display: none !important; }
+        /* Additional utility overrides if needed */
+        .d-none { display: none; }
+        .btn-primary { background: var(--primary); color: white; padding: 0.5rem 1.5rem; border-radius: 0.5rem; transition: all 0.3s; }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
+        .btn-success { background: var(--success); color: white; padding: 0.5rem 1.5rem; border-radius: 0.5rem; }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-50 font-sans antialiased" x-data="app()" x-cloak x-init="init()" data-user-authenticated="false" id="app-body">
+    
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg fixed w-full top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/" class="text-2xl font-bold" style="color: var(--primary);">NewsPlatform</a>
+                    <div class="hidden md:flex ml-10 space-x-8">
+                        <a href="/" class="text-gray-700 hover:text-indigo-600 px-3 py-2">Home</a>
+                        <a href="/articles/" class="text-gray-700 hover:text-indigo-600 px-3 py-2">Articles</a>
+                        <a href="/pricing/" class="text-gray-700 hover:text-indigo-600 px-3 py-2">Pricing</a>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <template x-if="!user">
+                        <div>
+                            <a href="/login/" class="text-gray-600 hover:text-gray-900 px-3 py-2">Login</a>
+                            <a href="/signup/" class="btn-gradient text-white px-4 py-2 rounded-lg">Sign Up</a>
+                        </div>
+                    </template>
+                    <template x-if="user">
+                        <div class="relative" x-data="{ dropdownOpen: false }">
+                            <button @click="dropdownOpen = !dropdownOpen" class="flex items-center space-x-2 focus:outline-none">
+                                <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <span x-text="user.email"></span>
+                                <i class="fas fa-chevron-down text-sm"></i>
+                                <span id="subscriptionBadge" x-show="subscription?.has_active_subscription" class="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full" x-text="subscription?.subscription?.plan_details?.name"></span>
+                            </button>
+                            <div x-show="dropdownOpen" @click.away="dropdownOpen = false" 
+                                 class="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg py-2 z-50">
+                                <a href="/dashboard/" class="block px-4 py-2 hover:bg-gray-100">Dashboard</a>
+                                <a href="/reading-list/" class="block px-4 py-2 hover:bg-gray-100">Reading List</a>
+                                <a href="/subscription/" class="block px-4 py-2 hover:bg-gray-100">Subscription</a>
+                                <hr class="my-2">
+                                <button @click="logout()" class="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600">Logout</button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+            <div class="animate-pulse w-6 h-6 bg-indigo-600 rounded-full"></div>
+            <span>Processing...</span>
+        </div>
+    </div>
+    
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg hidden z-50"></div>
+    
+    <!-- Main Content -->
+    <main class="pt-20">
+        <!-- Featured Articles Section -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Featured Articles</h2>
+            <div id="featured-articles" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="text-center py-8 col-span-3">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                    <p class="text-gray-500 mt-2">Loading featured articles...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Popular Topics / Categories Section -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Popular Topics</h2>
+            <div id="popular-topics" class="flex flex-wrap gap-3">
+                <div class="text-center py-8 w-full">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                    <p class="text-gray-500 mt-2">Loading categories...</p>
+                </div>
+            </div>
+        </div>
+        
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-white border-t mt-20 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <h3 class="font-bold text-lg mb-4">NewsPlatform</h3>
+                    <p class="text-gray-500 text-sm">Quality journalism for the modern reader.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-3">Content</h4>
+                    <ul class="space-y-2 text-sm text-gray-500">
+                        <li><a href="/articles/" class="hover:text-indigo-600">All Articles</a></li>
+                        <li><a href="/pricing/" class="hover:text-indigo-600">Pricing</a></li>
+                        <li><a href="/search/" class="hover:text-indigo-600">Search</a></li>    
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-3">Account</h4>
+                    <ul class="space-y-2 text-sm text-gray-500">
+                        <li><a href="/dashboard/" class="hover:text-indigo-600">Dashboard</a></li>
+                        <li><a href="/reading-list/" class="hover:text-indigo-600">Reading List</a></li>
+                        <li><a href="/transactions/" class="hover:text-indigo-600">Transactions</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-3">Company</h4>
+                    <ul class="space-y-2 text-sm text-gray-500">
+                        <li><a href="/about/" class="hover:text-indigo-600">About</a></li>
+                        <li><a href="/contact/" class="hover:text-indigo-600">Contact</a></li>
+                        <li><a href="/privacy/" class="hover:text-indigo-600">Privacy</a></li>
+                        <li><a href="/terms/" class="hover:text-indigo-600">Terms</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="text-center text-gray-400 text-sm pt-8 border-t">
+                <p>&copy; 2024 NewsPlatform. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Paywall Modal -->
+    <div id="paywallModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl max-w-md w-full mx-4 p-6 animate-slide-up">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-lock text-yellow-600 text-2xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold mb-2">Premium Content</h3>
+                <p class="text-gray-600 mb-4" id="modalMessage">This article requires a premium subscription.</p>
+                <a href="/pricing/" class="block btn-gradient text-white py-2 rounded-lg">Upgrade Now</a>
+                <button onclick="closePaywallModal()" class="mt-3 text-gray-500 hover:text-gray-700">Maybe Later</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Update body attribute for JS detection
+        document.getElementById('app-body').setAttribute('data-user-authenticated', localStorage.getItem('access_token') ? 'true' : 'false');
+        
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.getElementById('loadingOverlay').classList.add('flex');
+        }
+        
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            document.getElementById('loadingOverlay').classList.remove('flex');
+        }
+        
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.remove('hidden');
+            toast.style.backgroundColor = type === 'error' ? '#ef4444' : '#10b981';
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+        
+        function openPaywallModal(message) {
+            const modal = document.getElementById('paywallModal');
+            const msgSpan = document.getElementById('modalMessage');
+            if (msgSpan) msgSpan.textContent = message || 'This article requires a premium subscription.';
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+        
+        function closePaywallModal() {
+            const modal = document.getElementById('paywallModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+        
+        function app() {
+            return {
+                user: null,
+                subscription: null,
+                loading: true,
+                
+                async init() {
+                    await this.checkAuth();
+                    await this.checkSubscription();
+                    this.loading = false;
+                    
+                    // Trigger any external JS that needs to run after Alpine loads
+                    if (typeof fetchUserSubscription === 'function') {
+                        fetchUserSubscription();
+                    }
+                },
+                
+                async checkAuth() {
+                    const token = localStorage.getItem('access_token');
+                    if (token) {
+                        try {
+                            const resp = await fetch('/api/auth/user/', {
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                            if (resp.ok) {
+                                this.user = await resp.json();
+                                document.getElementById('app-body').setAttribute('data-user-authenticated', 'true');
+                            } else {
+                                localStorage.removeItem('access_token');
+                                localStorage.removeItem('refresh_token');
+                            }
+                        } catch(e) { console.error(e); }
+                    }
+                },
+                
+                async checkSubscription() {
+                    const token = localStorage.getItem('access_token');
+                    if (token) {
+                        try {
+                            const resp = await fetch('/api/payments/current-subscription/', {
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                            if (resp.ok) {
+                                this.subscription = await resp.json();
+                                if (typeof updateSubscriptionUI === 'function') {
+                                    updateSubscriptionUI(this.subscription);
+                                }
+                            }
+                        } catch(e) { console.error(e); }
+                    }
+                },
+                
+                logout() {
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('refresh_token');
+                    window.location.href = '/';
+                }
+            };
+        }
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>
