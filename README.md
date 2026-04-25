@@ -67,14 +67,13 @@ A complete Django-based subscription platform for news and content delivery with
 
 ### Installation
 
-Clone repository
-```bash
-git clone <repo url> 
-cd <repo>
-create virtual environment
-install dependencies (requirements.txt)
-create database
-run migrations
-start redis
-start celery
-start development server
+- Clone repository
+- git clone <repo url> 
+- cd <repo>
+- create virtual environment
+- install dependencies (requirements.txt)
+- create database
+- run migrations
+- start redis
+- start celery
+- start development server
