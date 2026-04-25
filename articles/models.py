@@ -118,6 +118,14 @@ class Article(models.Model):
             models.Index(fields=['published_at', 'status']),
         ]
 
+    @property
+    def author_email(self):
+        return self.author.user.email
+    
+    @property
+    def author_name(self):
+        return self.author.name    
+
     def __str__(self):
         return self.title
     
@@ -129,7 +137,7 @@ class Article(models.Model):
     @property
     def is_premium(self):
         return self.required_tier in ['premium', 'pro']
-
+    
     def get_absolute_url(self):
         return reverse('article-detail', kwargs={'slug': self.slug})
            

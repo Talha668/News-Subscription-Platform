@@ -1,8 +1,8 @@
 from rest_framework import viewsets, status, filters
-from rest_framework.decorators import action
+from rest_framework.decorators import action, permission_classes, api_view
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.utils import timezone
 from .models import Article, Category, Tag, UserReadingList, ArticleBookmark
 from .serializers import (
@@ -190,3 +190,55 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     lookup_field = 'slug'
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def popular_articles(request):
+    """Get popular/featured articles for homepage"""
+    limit = int(request.GET.get('limit', 6))
+
+    articles = Article.objects.filter(
+        status='published',
+        published_at__isnull=False
+    ).select_related('author', 'author__user').order_by('-published_at')[:limit]
+
+    data = []
+    for article in articles:
+        data.append({
+            'id': article.id,
+            'title': article.title,
+            'slug': article.slug,
+            'excerpt': article.excerpt,
+            'featured_image': article.featured_image,
+            'view_count': article.view_count,
+            'required_tier': article.required_tier,
+            'published_at': article.published_at,
+            'author_name': article.author.user.email,
+            'category_name': article.categories.first().name if article.categories.exists() else 'Uncategorized',
+            'category_slug': article.categories.first().slug if article.categories.exists() else 'Uncategorized',
+        })
+
+        return Response(data)
+    
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def category_list(request):
+    """Get all categories with article count"""
+    categories = Category.objects.annotate(
+        article_count=Count('articles', filter=Q(articles__status='published'))
+    ).filter(article_count__gte=0).order_by('-article_count')
+
+    data = []
+    for cat in categories:
+        data.append({
+            'id': cat.id,
+            'name': cat.name,
+            'slug': cat.slug,
+            'description': cat.description,
+            'featured_image': cat.featured_image,
+            'article_count': cat.article_count,
+        })
+
+        return Response(data)

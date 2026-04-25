@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import ArticleViewSet, CategoryViewSet, TagViewSet
-
+from . import views
 
 
 
@@ -16,5 +16,9 @@ router.register(r'tags', TagViewSet, basename='tag')
 
 
 urlpatterns = [
-    path('api/', include(router.urls)),
+    path('', include(router.urls)),
+
+    # Custom endpoint
+    path('popular/', views.popular_articles, name='popular-articles'),
+    path('api/categories/', views.category_list, name='category-list'),
 ]

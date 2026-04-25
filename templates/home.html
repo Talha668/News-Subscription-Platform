@@ -48,20 +48,24 @@ async function loadHomepage() {
     
     // Load featured articles - FIXED ENDPOINT
     try {
-        // Using the correct API endpoint based on your URL structure
-        const resp = await fetch('/api/articles/api/articles/popular/?limit=3', { headers });
+        // Fetch published articles, ordered by most recent
+        const resp = await fetch('/api/articles/articles/?status=published&ordering=-published_at&limit=6', { headers });
         
         if (!resp.ok) {
             throw new Error(`HTTP error! status: ${resp.status}`);
         }
         
-        const articles = await resp.json();
+        const data = await resp.json();
+        // Handle DRF paginated response
+        const articles = data.results || data;
+        
         const container = document.getElementById('featured-articles');
         
         if (articles && articles.length > 0) {
             container.innerHTML = articles.map(article => `
                 <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                    ${article.featured_image ? `<img src="${article.featured_image}" alt="${escapeHtml(article.title)}" class="w-full h-48 object-cover" onerror="this.style.display='none'">` : 
+                    ${article.featured_image ? 
+                        `<img src="${article.featured_image}" alt="${escapeHtml(article.title)}" class="w-full h-48 object-cover" onerror="this.style.display='none'">` : 
                         `<div class="w-full h-48 bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
                             <i class="fas fa-newspaper text-white text-4xl"></i>
                         </div>`
@@ -69,7 +73,7 @@ async function loadHomepage() {
                     <div class="p-6">
                         <div class="flex items-center justify-between mb-2">
                             ${article.required_tier !== 'free' ? 
-                                `<span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">${article.required_tier}</span>` : 
+                                `<span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded uppercase">${article.required_tier}</span>` : 
                                 `<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Free</span>`
                             }
                             <span class="text-sm text-gray-500">
@@ -77,18 +81,18 @@ async function loadHomepage() {
                             </span>
                         </div>
                         <h3 class="text-xl font-bold mb-2 line-clamp-2">
-                            <a href="/article/${article.slug}/" class="text-gray-800 hover:text-blue-600">
+                            <a href="/articles/${article.slug}/" class="text-gray-800 hover:text-blue-600">
                                 ${escapeHtml(article.title)}
                             </a>
                         </h3>
                         <p class="text-gray-600 mb-4 line-clamp-3">
-                            ${escapeHtml(article.excerpt ? article.excerpt.substring(0, 150) : 'Click to read more...')}
+                            ${escapeHtml(article.excerpt ? article.excerpt.substring(0, 150) : article.title)}
                         </p>
                         <div class="flex items-center justify-between">
                             <span class="text-sm text-gray-500">
-                                <i class="fas fa-user mr-1"></i> ${escapeHtml(article.author_name || 'Staff')}
+                                <i class="fas fa-user mr-1"></i> ${escapeHtml(article.author_name || article.author_email || 'Staff')}
                             </span>
-                            <a href="/article/${article.slug}/" class="text-blue-600 font-semibold hover:underline">
+                            <a href="/articles/${article.slug}/" class="text-blue-600 font-semibold hover:underline">
                                 Read More →
                             </a>
                         </div>
@@ -106,13 +110,16 @@ async function loadHomepage() {
     
     // Load categories - FIXED ENDPOINT
     try {
-        const resp = await fetch('/api/articles/api/categories/');
+        const resp = await fetch('/api/articles/categories/');
         
         if (!resp.ok) {
             throw new Error(`HTTP error! status: ${resp.status}`);
         }
         
-        const categories = await resp.json();
+        const data = await resp.json();
+        // Handle DRF paginated response
+        const categories = data.results || data;
+        
         const container = document.getElementById('categories');
         
         if (categories && categories.length > 0) {
@@ -122,7 +129,7 @@ async function loadHomepage() {
                 </a>
             `).join('');
         } else {
-            container.innerHTML = '<p class="text-gray-500">No categories available.</p>';
+            container.innerHTML = '<p class="text-gray-500">No categories available. Check back after articles are published!</p>';
         }
     } catch(e) { 
         console.error('Error loading categories:', e);
